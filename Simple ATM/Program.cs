@@ -24,7 +24,6 @@ class Program
         string inputID = Console.ReadLine();
         Console.WriteLine("Enter your pin:");
         string inputPIN = Console.ReadLine();
-        string userID = "";
 
         using (var conn = new SqlConnection(connectionString))
         {
@@ -46,15 +45,16 @@ class Program
                 
             }
             conn.Close();
-            Console.Clear();
-            Console.WriteLine($"Welcome, {userName}!");
-            displayAccounts(userID);
         }
+        displayAccounts(userID);
     }
 
     static void displayAccounts(string ID)
     {
-        
+        Console.Clear();
+        Console.WriteLine($"Accounts belonging to {userName}!");
+
+        string? accNo;
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
@@ -68,26 +68,27 @@ class Program
                 {
                     var account = reader.GetString(0);
                     
-                    var accNO = reader.GetString(2);
+                    accNo = reader.GetString(2);
                     var balance = reader.GetDecimal(3);
 
-                    Console.WriteLine($"{account} {userID} {accNO} {balance:c}");
+                    Console.WriteLine($"{account} {userID} {accNo} {balance:c}");
                 }
             }
             conn.Close();
         }
         Console.WriteLine("Enter account ID to perform transactions");
         string acc = Console.ReadLine();
-        accMenu(acc);
+        accMenu(acc, ID);
     }
     
-    static void accMenu(string accNum)
+    static void accMenu(string accID, string ID)
     {
-        Console.WriteLine($@"Choose an option for Acc Num: {accNum}
+        Console.WriteLine($@"Choose an option for Acc ID: {ID}
         1) Withdraw money
         2) Deposit money
-        3) View Accounts
-        4) Log out");
+        3) View Transactions
+        4) View Accounts
+        5) Log out");
         //Console.WriteLine($"\n\n Enter 0 to return to previous menu");
         var accOption = Console.ReadLine();
         switch (accOption)
@@ -96,18 +97,32 @@ class Program
                 Console.WriteLine("Money shall now leave you account!");
                 break;
             case "2":
-                Console.WriteLine("Money shall no enter your account!");
+                Console.WriteLine("Money shall now enter your account!");
                 break;
             case "3":
-                displayAccounts(userID);
+                accTransactions(accID, userID);
                 break;
             case "4":
-                Environment.Exit(0);
+                displayAccounts(userID);
+                break;
+            case "5":
+                logIn();
                 break;
                 
             default:
-                accMenu(accNum);
+                displayAccounts(userID);
                 break;
+        }
+    }
+
+    static void accTransactions(string accId, string ID)
+    {
+        using (var conn = new SqlConnection(connectionString))
+        {
+            conn.Open();
+            var cmd = conn.CreateCommand();
+            cmd.Parameters.AddWithValue("@accID", accId);
+            cmd.CommandText = $"SELECT  * FROM ShitBank.dbo.Transactions WHERE accountID = @accID";
         }
     }
 }
