@@ -75,7 +75,7 @@ class Program
         Console.Clear();
         Console.WriteLine($"Accounts belonging to {userName}!");
 
-        
+
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
@@ -104,7 +104,7 @@ class Program
         accMenu(acc, ID);
     }
 
-    static void accMenu(string accID, string ID) 
+    static void accMenu(string accID, string ID)
     {
         Console.WriteLine($@"Choose an option for Acc ID: {ID}
         1) Withdraw money
@@ -149,12 +149,34 @@ class Program
 
     static void accTransactions(string accId, string ID)
     {
+        Console.Clear();
+       // Console.WriteLine("{transID} {transType} {amount:C} {timeStamp}");
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
             var cmd = conn.CreateCommand();
             cmd.Parameters.AddWithValue("@accID", accId);
             cmd.CommandText = $"SELECT  * FROM ShitBank.dbo.Transactions WHERE accountID = @accID";
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var transID = reader.GetString(0);
+                    var transType = reader.GetString(2);
+                    var amount = reader.GetDecimal(3);
+                    var timeStamp = reader.GetDateTime(4);
+                    if (transType == "D") transType = "Deposit";
+                    if (transType == "W") transType = "Withdrawal";
+                    Console.WriteLine($"\n{transID} {transType} {amount:C} {timeStamp}\t");
+                }
+
+                Console.WriteLine($"\n");
+                Console.WriteLine("Press any key to return to account functions");
+                Console.ReadKey();
+            }
+
+            conn.Close();
+            accMenu(accId, ID);
         }
     }
 }
