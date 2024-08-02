@@ -13,9 +13,7 @@ class Program
 
     static void Main(string[] args)
     {
-        //
-
-        logIn();
+        logIn(); // authenticate userID and PIN
     }
 
     static void logIn()
@@ -23,7 +21,7 @@ class Program
         Console.WriteLine($"\tWelcome to TopaZ Banking! \nEnter your User ID:");
         string inputID = Console.ReadLine();
         Console.WriteLine("Enter your pin:");
-        string inputPIN = Console.ReadLine();
+        string inputPIN = ReadPassword();
 
         using (var conn = new SqlConnection(connectionString))
         {
@@ -40,21 +38,44 @@ class Program
                 {
                     userID = reader.GetString(0);
                     userName = reader.GetString(1);
-                    
                 }
-                
             }
+
             conn.Close();
         }
+
         displayAccounts(userID);
     }
 
-    static void displayAccounts(string ID)
+    static string ReadPassword()
+    {
+        string inputPIN = string.Empty;
+        ConsoleKeyInfo key;
+        do
+        {
+            key = Console.ReadKey(true); // Read key but don't display it
+            // if key isn't enter, backspace or non-char key
+            if (key.Key != ConsoleKey.Enter && key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Escape)
+            {
+                inputPIN += key.KeyChar;
+                Console.Write("*");
+            }
+            else if (key.Key == ConsoleKey.Backspace && inputPIN.Length > 0)
+            {
+                inputPIN = inputPIN[0..^1]; // Remove last char
+                Console.Write("\b \b"); // Move curses 1 space back, print space, move 1 space back again
+            }
+        } while (key.Key != ConsoleKey.Enter);
+
+        return inputPIN;
+    }
+
+    static void displayAccounts(string ID) // displays all account belonging to user
     {
         Console.Clear();
         Console.WriteLine($"Accounts belonging to {userName}!");
 
-        string? accNo;
+        
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
@@ -67,21 +88,23 @@ class Program
                 while (reader.Read())
                 {
                     var account = reader.GetString(0);
-                    
-                    accNo = reader.GetString(2);
+
+                    var accNo = reader.GetString(2);
                     var balance = reader.GetDecimal(3);
 
                     Console.WriteLine($"{account} {userID} {accNo} {balance:c}");
                 }
             }
+
             conn.Close();
         }
+
         Console.WriteLine("Enter account ID to perform transactions");
         string acc = Console.ReadLine();
         accMenu(acc, ID);
     }
-    
-    static void accMenu(string accID, string ID)
+
+    static void accMenu(string accID, string ID) 
     {
         Console.WriteLine($@"Choose an option for Acc ID: {ID}
         1) Withdraw money
@@ -95,6 +118,7 @@ class Program
         {
             case "1":
                 Console.WriteLine("Money shall now leave you account!");
+                Withdraw(accID, ID);
                 break;
             case "2":
                 Console.WriteLine("Money shall now enter your account!");
@@ -106,13 +130,21 @@ class Program
                 displayAccounts(userID);
                 break;
             case "5":
+                userID = "";
+                userName = "";
                 logIn();
                 break;
-                
+
             default:
                 displayAccounts(userID);
                 break;
         }
+    }
+
+    static void Withdraw(string accID, string ID)
+    {
+        Console.WriteLine("Enter withdrawal amount");
+        decimal withAmount = decimal.Parse(Console.ReadLine());
     }
 
     static void accTransactions(string accId, string ID)
