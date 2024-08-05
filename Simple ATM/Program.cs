@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Data;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Simple_ATM;
 
@@ -21,7 +23,15 @@ class Program
         Console.WriteLine($"\tWelcome to TopaZ Banking! \nEnter your User ID:");
         string inputID = Console.ReadLine();
         Console.WriteLine("Enter your pin:");
-        string inputPIN = ReadPassword();
+        string inputPIN = HideInput();
+
+        // Convert PIN into array of bytes
+        byte[] pinBytes = Encoding.UTF8.GetBytes(inputPIN);
+        //Create hash value from the array of bytes
+        byte[] hashValue = SHA256.HashData(pinBytes);
+        //Convert back into string to be usable in query
+        inputPIN = Convert.ToHexString(hashValue);
+
 
         using (var conn = new SqlConnection(connectionString))
         {
@@ -47,7 +57,7 @@ class Program
         displayAccounts(userID);
     }
 
-    static string ReadPassword()
+    static string HideInput()
     {
         string inputPIN = string.Empty;
         ConsoleKeyInfo key;
@@ -74,7 +84,7 @@ class Program
     {
         Console.Clear();
         Console.WriteLine($"Accounts belonging to {userName}!");
-
+        string[] allAccounts = { };
 
         using (var conn = new SqlConnection(connectionString))
         {
@@ -101,12 +111,35 @@ class Program
 
         Console.WriteLine("Enter account ID to perform transactions");
         string acc = Console.ReadLine();
-        accMenu(acc, ID);
+        VerifyAcc(acc, ID);
+        
+        //accMenu(acc, ID);
+    }
+
+    static void VerifyAcc(string acc, string ID)
+    {
+        using (var conn = new SqlConnection(connectionString))
+        {
+            conn.Open();
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT * FROM ShitBank.dbo.Accounts where accountID = @acc and userID = @ID";
+            cmd.Parameters.AddWithValue("@acc", acc);
+            cmd.Parameters.AddWithValue("@ID", ID);
+            if(acc == Convert.ToString(cmd.ExecuteScalar())) accMenu(acc, ID);
+            else
+            {
+                Console.WriteLine("Invalid option. Press any key to continue");
+                Console.ReadKey();
+                displayAccounts(ID);
+            }
+            conn.Close();
+        }
+        
     }
 
     static void accMenu(string accID, string ID)
     {
-        Console.WriteLine($@"Choose an option for Acc ID: {ID}
+        Console.WriteLine($@"Choose an option for Acc ID: {accID}
         1) Withdraw money
         2) Deposit money
         3) View Transactions
@@ -150,7 +183,7 @@ class Program
     static void accTransactions(string accId, string ID)
     {
         Console.Clear();
-       // Console.WriteLine("{transID} {transType} {amount:C} {timeStamp}");
+        // Console.WriteLine("{transID} {transType} {amount:C} {timeStamp}");
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
