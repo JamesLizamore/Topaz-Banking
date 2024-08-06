@@ -12,7 +12,8 @@ class Program
     static string connectionString = $"Server=(localdb)\\MSSQLLocalDB";
     static string userID = "";
     static string userName = "";
-
+    static string userPIN = "";
+    static CultureInfo braaiGeld = CultureInfo.GetCultureInfo("en-ZA");
     static void Main(string[] args)
     {
         logIn(); // authenticate userID and PIN
@@ -40,7 +41,7 @@ class Program
             cmd.Parameters.AddWithValue("@inputID", inputID);
             cmd.Parameters.AddWithValue("@inputPIN", inputPIN);
             cmd.CommandText =
-                $"SELECT userID, userName FROM ShitBank.dbo.Users WHERE userID = @inputID AND userPIN = @inputPIN";
+                $"SELECT * FROM ShitBank.dbo.Users WHERE userID = @inputID AND userPIN = @inputPIN";
 
             using (var reader = cmd.ExecuteReader())
             {
@@ -48,13 +49,23 @@ class Program
                 {
                     userID = reader.GetString(0);
                     userName = reader.GetString(1);
+                    userPIN = reader.GetString(2);
                 }
             }
 
             conn.Close();
         }
 
-        displayAccounts(userID);
+        // only proceed if inputs match DB value
+        if (inputID == userID && userID != "" && userPIN == inputPIN && userPIN != "") displayAccounts(userID);
+        else
+        {
+            Console.Clear();
+            Console.WriteLine("Invalid credentials. Press any key to return to login menu.");
+            Console.ReadKey();
+            Console.Clear();
+            logIn();
+        }
     }
 
     static string HideInput()
@@ -102,7 +113,7 @@ class Program
                     var accNo = reader.GetString(2);
                     var balance = reader.GetDecimal(3);
 
-                    Console.WriteLine($"{account} {userID} {accNo} {balance:c}");
+                    Console.WriteLine($"{account} {userID} {accNo} {balance:C}");
                 }
             }
 
@@ -112,8 +123,6 @@ class Program
         Console.WriteLine("Enter account ID to perform transactions");
         string acc = Console.ReadLine();
         VerifyAcc(acc, ID);
-        
-        //accMenu(acc, ID);
     }
 
     static void VerifyAcc(string acc, string ID)
@@ -125,16 +134,16 @@ class Program
             cmd.CommandText = $"SELECT * FROM ShitBank.dbo.Accounts where accountID = @acc and userID = @ID";
             cmd.Parameters.AddWithValue("@acc", acc);
             cmd.Parameters.AddWithValue("@ID", ID);
-            if(acc == Convert.ToString(cmd.ExecuteScalar())) accMenu(acc, ID);
+            if (acc == Convert.ToString(cmd.ExecuteScalar()) && acc != "") accMenu(acc, ID);
             else
             {
                 Console.WriteLine("Invalid option. Press any key to continue");
                 Console.ReadKey();
                 displayAccounts(ID);
             }
+
             conn.Close();
         }
-        
     }
 
     static void accMenu(string accID, string ID)
@@ -145,7 +154,7 @@ class Program
         3) View Transactions
         4) View Accounts
         5) Log out");
-        //Console.WriteLine($"\n\n Enter 0 to return to previous menu");
+
         var accOption = Console.ReadLine();
         switch (accOption)
         {
@@ -200,7 +209,7 @@ class Program
                     var timeStamp = reader.GetDateTime(4);
                     if (transType == "D") transType = "Deposit";
                     if (transType == "W") transType = "Withdrawal";
-                    Console.WriteLine($"\n{transID} {transType} {amount:C} {timeStamp}\t");
+                    Console.WriteLine($"\n{transID} {transType} {amount:c} {timeStamp}\t");
                 }
 
                 Console.WriteLine($"\n");
