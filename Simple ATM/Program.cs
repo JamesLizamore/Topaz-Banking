@@ -14,6 +14,7 @@ class Program
     static string userName = "";
     static string userPIN = "";
     static CultureInfo braaiGeld = CultureInfo.GetCultureInfo("en-ZA");
+
     static void Main(string[] args)
     {
         logIn(); // authenticate userID and PIN
@@ -95,8 +96,7 @@ class Program
     {
         Console.Clear();
         Console.WriteLine($"Accounts belonging to {userName}!");
-        string[] allAccounts = { };
-
+        
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
