@@ -1,6 +1,5 @@
 ﻿using System.Data.SqlClient;
-using System.Collections;
-using System.Data;
+
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -13,14 +12,13 @@ class Program
     static string userID = "";
     static string userName = "";
     static string userPIN = "";
-    static CultureInfo braaiGeld = CultureInfo.GetCultureInfo("en-ZA");
 
     static void Main(string[] args)
     {
-        logIn(); // authenticate userID and PIN
+        LogIn(); // authenticate userID and PIN
     }
 
-    static void logIn()
+    static void LogIn()
     {
         Console.WriteLine($"\tWelcome to TopaZ Banking! \nEnter your User ID:");
         string inputID = Console.ReadLine();
@@ -42,7 +40,7 @@ class Program
             cmd.Parameters.AddWithValue("@inputID", inputID);
             cmd.Parameters.AddWithValue("@inputPIN", inputPIN);
             cmd.CommandText =
-                $"SELECT * FROM ShitBank.dbo.Users WHERE userID = @inputID AND userPIN = @inputPIN";
+                $"SELECT * FROM TopazBanking.dbo.Users WHERE userID = @inputID AND userPIN = @inputPIN";
 
             using (var reader = cmd.ExecuteReader())
             {
@@ -58,14 +56,14 @@ class Program
         }
 
         // only proceed if inputs match DB value
-        if (inputID == userID && userID != "" && userPIN == inputPIN && userPIN != "") displayAccounts(userID);
+        if (inputID == userID && userID != "" && userPIN == inputPIN && userPIN != "") DisplayAccounts(userID);
         else
         {
             Console.Clear();
             Console.WriteLine("Invalid credentials. Press any key to return to login menu.");
             Console.ReadKey();
             Console.Clear();
-            logIn();
+            LogIn();
         }
     }
 
@@ -92,28 +90,28 @@ class Program
         return inputPIN;
     }
 
-    static void displayAccounts(string ID) // displays all account belonging to user
+    static void DisplayAccounts(string ID) // displays all account belonging to user
     {
         Console.Clear();
         Console.WriteLine($"Accounts belonging to {userName}!");
-        
+
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
             var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT * FROM ShitBank.dbo.Accounts where userID = @ID";
+            cmd.CommandText = $"SELECT * FROM TopazBanking.dbo.Accounts where userID = @ID";
             cmd.Parameters.AddWithValue("@ID", ID);
 
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    var account = reader.GetString(0);
+                    var account = reader.GetInt32(0);
+                    var accType = reader.GetString(1);
+                    var accNo = reader.GetString(3);
+                    var balance = reader.GetDecimal(4);
 
-                    var accNo = reader.GetString(2);
-                    var balance = reader.GetDecimal(3);
-
-                    Console.WriteLine($"{account} {userID} {accNo} {balance:C}");
+                    Console.WriteLine($"{account} {accType} {accNo} {balance:C}");
                 }
             }
 
@@ -131,22 +129,22 @@ class Program
         {
             conn.Open();
             var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT * FROM ShitBank.dbo.Accounts where accountID = @acc and userID = @ID";
+            cmd.CommandText = $"SELECT * FROM TopazBanking.dbo.Accounts where accountID = @acc and userID = @ID";
             cmd.Parameters.AddWithValue("@acc", acc);
             cmd.Parameters.AddWithValue("@ID", ID);
-            if (acc == Convert.ToString(cmd.ExecuteScalar()) && acc != "") accMenu(acc, ID);
+            if (acc == Convert.ToString(cmd.ExecuteScalar()) && acc != "") AccMenu(acc, ID);
             else
             {
                 Console.WriteLine("Invalid option. Press any key to continue");
                 Console.ReadKey();
-                displayAccounts(ID);
+                DisplayAccounts(ID);
             }
 
             conn.Close();
         }
     }
 
-    static void accMenu(string accID, string ID)
+    static void AccMenu(string accID, string ID)
     {
         Console.WriteLine($@"Choose an option for Acc ID: {accID}
         1) Withdraw money
@@ -160,36 +158,75 @@ class Program
         {
             case "1":
                 Console.WriteLine("Money shall now leave you account!");
-                Withdraw(accID, ID);
+                Withdraw(Convert.ToInt32(accID), ID);
                 break;
             case "2":
                 Console.WriteLine("Money shall now enter your account!");
                 break;
             case "3":
-                accTransactions(accID, userID);
+                AccTransactions(accID, userID);
                 break;
             case "4":
-                displayAccounts(userID);
+                DisplayAccounts(userID);
                 break;
             case "5":
                 userID = "";
                 userName = "";
-                logIn();
+                LogIn();
                 break;
 
             default:
-                displayAccounts(userID);
+                DisplayAccounts(userID);
                 break;
         }
     }
 
-    static void Withdraw(string accID, string ID)
+    static void Withdraw(int accID, string ID)
     {
-        Console.WriteLine("Enter withdrawal amount");
-        decimal withAmount = decimal.Parse(Console.ReadLine());
+        Console.WriteLine("Please enter withdrawal amount:");
+        decimal withdrawalAmount;
+        while (!decimal.TryParse(Console.ReadLine(), out withdrawalAmount) || withdrawalAmount <= 0)
+        {
+            Console.WriteLine("Invalid withdrawal amount.");
+            Withdraw(accID, ID);
+            return; // return to what?
+        }
+
+        using (var conn = new SqlConnection(connectionString))
+        {
+            conn.Open();
+            SqlCommand cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT balance FROM TopazBanking.dbo.Accounts WHERE accountID = @{accID}";
+            cmd.Parameters.AddWithValue("@accID", accID);
+            decimal currentBalance = (decimal)cmd.ExecuteScalar();
+
+            if (currentBalance >= withdrawalAmount)
+            {
+                cmd.CommandText =
+                    "UPDATE TopazBanking.dbo.Accounts SET balance = balance - @withdrawalAmount WHERE accountID = @accID";
+                cmd.Parameters.AddWithValue("@withdrawalAmount", withdrawalAmount);
+                cmd.ExecuteNonQuery();
+
+                cmd.CommandText =
+                    $"INSERT INTO Transactions VALUES ('{accID}', 'WITHDRAWAL', '{withdrawalAmount}', '{DateTime.Now}')";
+
+                cmd.ExecuteNonQuery();
+
+                Console.WriteLine("Withdrawal successful.");
+                Console.WriteLine("Press any key to return to account functions");
+                Console.ReadKey();
+                Console.Clear();
+                DisplayAccounts(ID); // changed var global userID to local ID
+            }
+            else
+            {
+                Console.WriteLine("Insufficient funds.");
+            }
+            conn.Close();
+        }
     }
 
-    static void accTransactions(string accId, string ID)
+    static void AccTransactions(string accId, string ID)
     {
         Console.Clear();
         // Console.WriteLine("{transID} {transType} {amount:C} {timeStamp}");
@@ -198,7 +235,7 @@ class Program
             conn.Open();
             var cmd = conn.CreateCommand();
             cmd.Parameters.AddWithValue("@accID", accId);
-            cmd.CommandText = $"SELECT  * FROM ShitBank.dbo.Transactions WHERE accountID = @accID";
+            cmd.CommandText = $"SELECT  * FROM TopazBanking.dbo.Transactions WHERE accountID = @accID";
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -207,18 +244,18 @@ class Program
                     var transType = reader.GetString(2);
                     var amount = reader.GetDecimal(3);
                     var timeStamp = reader.GetDateTime(4);
-                    if (transType == "D") transType = "Deposit";
-                    if (transType == "W") transType = "Withdrawal";
+
                     Console.WriteLine($"\n{transID} {transType} {amount:c} {timeStamp}\t");
                 }
 
+                if (!reader.HasRows) Console.WriteLine("No transactions found.");
                 Console.WriteLine($"\n");
                 Console.WriteLine("Press any key to return to account functions");
                 Console.ReadKey();
             }
 
             conn.Close();
-            accMenu(accId, ID);
+            AccMenu(accId, ID);
         }
     }
 }
