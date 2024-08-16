@@ -1,6 +1,4 @@
 ﻿using System.Data.SqlClient;
-
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -31,7 +29,6 @@ class Program
         byte[] hashValue = SHA256.HashData(pinBytes);
         //Convert back into string to be usable in query
         inputPIN = Convert.ToHexString(hashValue);
-
 
         using (var conn = new SqlConnection(connectionString))
         {
@@ -90,7 +87,7 @@ class Program
         return inputPIN;
     }
 
-    static void DisplayAccounts(string ID) // displays all account belonging to user
+    static void DisplayAccounts(string uID)
     {
         Console.Clear();
         Console.WriteLine($"Accounts belonging to {userName}!");
@@ -100,7 +97,7 @@ class Program
             conn.Open();
             var cmd = conn.CreateCommand();
             cmd.CommandText = $"SELECT * FROM TopazBanking.dbo.Accounts where userID = @ID";
-            cmd.Parameters.AddWithValue("@ID", ID);
+            cmd.Parameters.AddWithValue("@ID", uID);
 
             using (var reader = cmd.ExecuteReader())
             {
@@ -119,32 +116,44 @@ class Program
         }
 
         Console.WriteLine("Enter account ID to perform transactions");
-        string acc = Console.ReadLine();
-        VerifyAcc(acc, ID);
+        string accInput = Console.ReadLine();
+        try
+        {
+            Convert.ToInt32(accInput).Equals(typeof(Int32)); // ensure input can be converted to integer
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Account choice must be an integer. Press any key to continue");
+            Console.ReadKey();
+            DisplayAccounts(uID);
+        }
+
+        int accID = Convert.ToInt32(accInput);
+        VerifyAcc(accID, uID);
     }
 
-    static void VerifyAcc(string acc, string ID)
+    static void VerifyAcc(int accID, string uID)
     {
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
             var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT * FROM TopazBanking.dbo.Accounts where accountID = @acc and userID = @ID";
-            cmd.Parameters.AddWithValue("@acc", acc);
-            cmd.Parameters.AddWithValue("@ID", ID);
-            if (acc == Convert.ToString(cmd.ExecuteScalar()) && acc != "") AccMenu(acc, ID);
+            cmd.CommandText = $"SELECT * FROM TopazBanking.dbo.Accounts where accountID = @accID and userID = @uID";
+            cmd.Parameters.AddWithValue("@accID", accID);
+            cmd.Parameters.AddWithValue("@uID", uID);
+            if (accID == Convert.ToInt32(cmd.ExecuteScalar()) && accID != 0) AccMenu(accID, uID);
             else
             {
                 Console.WriteLine("Invalid option. Press any key to continue");
                 Console.ReadKey();
-                DisplayAccounts(ID);
+                DisplayAccounts(uID);
             }
 
             conn.Close();
         }
     }
 
-    static void AccMenu(string accID, string ID)
+    static void AccMenu(int accID, string uID)
     {
         Console.WriteLine($@"Choose an option for Acc ID: {accID}
         1) Withdraw money
@@ -157,11 +166,10 @@ class Program
         switch (accOption)
         {
             case "1":
-                Console.WriteLine("Money shall now leave you account!");
-                Withdraw(Convert.ToInt32(accID), ID);
+                Withdraw(accID, userID);
                 break;
             case "2":
-                Console.WriteLine("Money shall now enter your account!");
+                Deposit(accID, userID);
                 break;
             case "3":
                 AccTransactions(accID, userID);
@@ -176,19 +184,55 @@ class Program
                 break;
 
             default:
-                DisplayAccounts(userID);
+                Console.WriteLine("Invalid option. Press any key to try again");
+                Console.ReadKey();
+                Console.Clear();
+                AccMenu(accID, userID);
                 break;
         }
     }
 
-    static void Withdraw(int accID, string ID)
+    static void Deposit(int accID, string uID)
+    {
+        Console.WriteLine("Please enter deposit amount:");
+        decimal depositAmount;
+        while (!decimal.TryParse(Console.ReadLine(), out depositAmount) || depositAmount <= 0)
+        {
+            Console.WriteLine("Invalid deposit amount.");
+            Deposit(accID, userID);
+            return;
+        }
+
+        using (var conn = new SqlConnection(connectionString))
+        {
+            conn.Open();
+            SqlCommand cmd = conn.CreateCommand();
+
+            cmd.CommandText =
+                $"UPDATE TopazBanking.dbo.Accounts SET balance = balance + {depositAmount} WHERE accountID = {accID} and userID = '{userID}'";
+            cmd.ExecuteNonQuery();
+
+            cmd.CommandText =
+                $"INSERT INTO TopazBanking.dbo.Transactions VALUES ('{accID}', 'DEPOSIT', '{depositAmount}', '{DateTime.Now}')";
+            cmd.ExecuteNonQuery();
+            conn.Close();
+
+            Console.WriteLine("Deposit successful.");
+            Console.WriteLine("Press any key to return to account functions");
+            Console.ReadKey();
+            Console.Clear();
+            DisplayAccounts(uID);
+        }
+    }
+
+    static void Withdraw(int accID, string uID)
     {
         Console.WriteLine("Please enter withdrawal amount:");
         decimal withdrawalAmount;
         while (!decimal.TryParse(Console.ReadLine(), out withdrawalAmount) || withdrawalAmount <= 0)
         {
             Console.WriteLine("Invalid withdrawal amount.");
-            Withdraw(accID, ID);
+            Withdraw(accID, userID);
             return; // return to what?
         }
 
@@ -196,66 +240,66 @@ class Program
         {
             conn.Open();
             SqlCommand cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT balance FROM TopazBanking.dbo.Accounts WHERE accountID = @{accID}";
-            cmd.Parameters.AddWithValue("@accID", accID);
+            cmd.CommandText =
+                $"SELECT balance FROM TopazBanking.dbo.Accounts WHERE accountID = {accID} and userID = '{userID}'";
+
             decimal currentBalance = (decimal)cmd.ExecuteScalar();
 
             if (currentBalance >= withdrawalAmount)
             {
                 cmd.CommandText =
-                    "UPDATE TopazBanking.dbo.Accounts SET balance = balance - @withdrawalAmount WHERE accountID = @accID";
-                cmd.Parameters.AddWithValue("@withdrawalAmount", withdrawalAmount);
+                    $"UPDATE TopazBanking.dbo.Accounts SET balance = balance - {withdrawalAmount} WHERE accountID = {accID} and userID = '{uID}'";
                 cmd.ExecuteNonQuery();
 
                 cmd.CommandText =
-                    $"INSERT INTO Transactions VALUES ('{accID}', 'WITHDRAWAL', '{withdrawalAmount}', '{DateTime.Now}')";
-
+                    $"INSERT INTO TopazBanking.dbo.Transactions VALUES ('{accID}', 'WITHDRAWAL', '{withdrawalAmount}', '{DateTime.Now}')";
                 cmd.ExecuteNonQuery();
 
                 Console.WriteLine("Withdrawal successful.");
                 Console.WriteLine("Press any key to return to account functions");
                 Console.ReadKey();
                 Console.Clear();
-                DisplayAccounts(ID); // changed var global userID to local ID
+                DisplayAccounts(userID);
             }
             else
             {
                 Console.WriteLine("Insufficient funds.");
             }
+
             conn.Close();
         }
     }
 
-    static void AccTransactions(string accId, string ID)
+    static void AccTransactions(int accID, string uID)
     {
         Console.Clear();
-        // Console.WriteLine("{transID} {transType} {amount:C} {timeStamp}");
+        Console.WriteLine($"Transactions for account {accID}");
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
             var cmd = conn.CreateCommand();
-            cmd.Parameters.AddWithValue("@accID", accId);
+            cmd.Parameters.AddWithValue("@accID", accID);
             cmd.CommandText = $"SELECT  * FROM TopazBanking.dbo.Transactions WHERE accountID = @accID";
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    var transID = reader.GetString(0);
+                    var transID = reader.GetInt32(0);
                     var transType = reader.GetString(2);
-                    var amount = reader.GetDecimal(3);
-                    var timeStamp = reader.GetDateTime(4);
+                    var transAmount = reader.GetDecimal(3);
+                    var transDate = reader.GetDateTime(4);
 
-                    Console.WriteLine($"\n{transID} {transType} {amount:c} {timeStamp}\t");
+                    Console.WriteLine($"\n{transID} {transType} {transAmount:c} {transDate}\t");
                 }
 
                 if (!reader.HasRows) Console.WriteLine("No transactions found.");
-                Console.WriteLine($"\n");
-                Console.WriteLine("Press any key to return to account functions");
+                Console.WriteLine($"\nPress any key to return to account functions");
                 Console.ReadKey();
             }
 
             conn.Close();
-            AccMenu(accId, ID);
+
+            AccMenu(accID, uID);
         }
     }
 }
