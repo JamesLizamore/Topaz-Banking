@@ -1,6 +1,7 @@
 ﻿using System.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
+using System.Globalization;
 
 namespace Simple_ATM;
 
@@ -11,14 +12,30 @@ class Program
     static string userName = "";
     static string userPIN = "";
 
+
+    private static string topazFont = @"
+  _______                ______  ____              _    _             
+ |__   __|              |___  / |  _ \            | |  (_)            
+    | | ___  _ __   __ _   / /  | |_) | __ _ _ __ | | ___ _ __   __ _ 
+    | |/ _ \| '_ \ / _` | / /   |  _ < / _` | '_ \| |/ / | '_ \ / _` |
+    | | (_) | |_) | (_| |/ /__  | |_) | (_| | | | |   <| | | | | (_| |
+    |_|\___/| .__/ \__,_/_____| |____/ \__,_|_| |_|_|\_\_|_| |_|\__, |
+            | |                                                  __/ |
+            |_|                                                 |___/ 
+";
+
     static void Main(string[] args)
     {
+        Console.Clear();
+        Console.ForegroundColor = ConsoleColor.Cyan;
         LogIn(); // authenticate userID and PIN
     }
 
     static void LogIn()
     {
-        Console.WriteLine($"\tWelcome to TopaZ Banking! \nEnter your User ID:");
+        Console.Clear();
+        Console.WriteLine(topazFont);
+        Console.WriteLine($"Enter your User ID:");
         string inputID = Console.ReadLine();
         Console.WriteLine("Enter your pin:");
         string inputPIN = HideInput();
@@ -39,14 +56,24 @@ class Program
             cmd.CommandText =
                 $"SELECT * FROM TopazBanking.dbo.Users WHERE userID = @inputID AND userPIN = @inputPIN";
 
-            using (var reader = cmd.ExecuteReader())
+            try
             {
-                while (reader.Read())
+                using (var reader = cmd.ExecuteReader())
                 {
-                    userID = reader.GetString(0);
-                    userName = reader.GetString(1);
-                    userPIN = reader.GetString(2);
+                    while (reader.Read())
+                    {
+                        userID = reader.GetString(0);
+                        userName = reader.GetString(1);
+                        userPIN = reader.GetString(2);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Please enter valid input. Press any key to try again");
+                Console.ReadKey();
+                Console.Clear();
+                LogIn();
             }
 
             conn.Close();
@@ -90,8 +117,10 @@ class Program
     static void DisplayAccounts(string uID)
     {
         Console.Clear();
-        Console.WriteLine($"Accounts belonging to {userName}!");
-
+        Console.WriteLine(topazFont);
+        Console.WriteLine($"Accounts belonging to {userName}:");
+        Console.WriteLine($"\t{"| Acc ID",-7} {"| Acc Type",-10} {"| Acc Number",-12} {"| Balance"}");
+        Console.WriteLine("||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
@@ -103,19 +132,20 @@ class Program
             {
                 while (reader.Read())
                 {
-                    var account = reader.GetInt32(0);
+                    var accID = reader.GetInt32(0);
                     var accType = reader.GetString(1);
                     var accNo = reader.GetString(3);
                     var balance = reader.GetDecimal(4);
-
-                    Console.WriteLine($"{account} {accType} {accNo} {balance:C}");
+                    //Console.WriteLine($"\t{account,-7} {accType,-10} {accNo,-12} {balance:C}");
+                    Console.WriteLine("\t| {0,-7}| {1,-10}| {2,-12}| {3, 12}", accID, accType, accNo,
+                        balance.ToString("C", CultureInfo.GetCultureInfo("en-ZA")));
                 }
             }
 
             conn.Close();
         }
 
-        Console.WriteLine("Enter account ID to perform transactions");
+        Console.WriteLine("Enter Acc ID to perform transactions");
         string accInput = Console.ReadLine();
         try
         {
@@ -128,8 +158,9 @@ class Program
             DisplayAccounts(uID);
         }
 
-        int accID = Convert.ToInt32(accInput);
-        VerifyAcc(accID, uID);
+        int accOption = Convert.ToInt32(accInput);
+        Console.Clear();
+        VerifyAcc(accOption, uID);
     }
 
     static void VerifyAcc(int accID, string uID)
@@ -155,6 +186,8 @@ class Program
 
     static void AccMenu(int accID, string uID)
     {
+        Console.Clear();
+        Console.WriteLine(topazFont);
         Console.WriteLine($@"Choose an option for Acc ID: {accID}
         1) Withdraw money
         2) Deposit money
@@ -274,12 +307,13 @@ class Program
     {
         Console.Clear();
         Console.WriteLine($"Transactions for account {accID}");
+        Console.WriteLine($"\t| {"ID",4}\t| {"Date of transaction",20}\t| {"Acc Type",-9}\t| Amount");
+        Console.WriteLine($"\t|||||||||||||||||||||||||||||||||||||||||||||||||||||||||");
         using (var conn = new SqlConnection(connectionString))
         {
             conn.Open();
             var cmd = conn.CreateCommand();
-            cmd.Parameters.AddWithValue("@accID", accID);
-            cmd.CommandText = $"SELECT  * FROM TopazBanking.dbo.Transactions WHERE accountID = @accID";
+            cmd.CommandText = $"SELECT * FROM TopazBanking.dbo.Transactions WHERE accountID = {accID}";
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -288,11 +322,13 @@ class Program
                     var transType = reader.GetString(2);
                     var transAmount = reader.GetDecimal(3);
                     var transDate = reader.GetDateTime(4);
-
-                    Console.WriteLine($"\n{transID} {transType} {transAmount:c} {transDate}\t");
+                    Console.WriteLine("\t| {0, 4}\t| {1, 20}\t| {2, -9}\t| {3, 10}", transID,
+                        transDate.ToString("G", CultureInfo.GetCultureInfo("en-ZA")), transType,
+                        transAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA")));
+                    //Console.WriteLine($"\t|{transID, 4}\t|{transDate, 20}\t|{transType, -10}\t|{transAmount:C}");
                 }
 
-                if (!reader.HasRows) Console.WriteLine("No transactions found.");
+                if (!reader.HasRows) Console.WriteLine("\n\tNo transactions found.");
                 Console.WriteLine($"\nPress any key to return to account functions");
                 Console.ReadKey();
             }
