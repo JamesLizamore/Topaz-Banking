@@ -35,8 +35,6 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 🌐 GitHub
 ## Lessons Learned
 
-What did you learn while building this project? What challenges did you face and how did you overcome them?
-
 - Planning - *don't rush the planning phase*
 - Databases - *connect to database, query, CRUD operations*
 - Communication - *know exactly what your and your teammate's tasks are*
