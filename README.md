@@ -39,7 +39,7 @@ What did you learn while building this project? What challenges did you face and
 
 - Planning - *don't rush the planning phase*
 - Databases - *connect to database, query, CRUD operations*
-- Communication - *know exactly what your and your teammates tasks are*
+- Communication - *know exactly what your and your teammate's tasks are*
 - Cryptography - *Encryption vs Hashing, salting*
 - KISS - *Don't overcomplicate things*
 - Research - *The answer is often a few Google searches away*
