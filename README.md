@@ -49,3 +49,5 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 ![Method Users Interact With](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/User%20Method%20interact.png?raw=true)
 
 ![User Input Values](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/User%20Inputs.png?raw=true)
+
+![DB Relation](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/DB%20Relation.png?raw=true)
