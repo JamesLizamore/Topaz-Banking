@@ -3,6 +3,8 @@
 
 This C# console app simulates an ATM interface 🏧
 
+User can have multiple accounts 💳
+
 Users can withdraw, deposit, view past transactions 💲
 
 All transactions, accounts and users are stored in a database on a local SQL Server 𝄜
