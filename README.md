@@ -33,15 +33,7 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 🔗 ADO.NET
 
 🌐 GitHub
-## Lessons Learned
 
-- Planning - *don't rush the planning phase*
-- Databases - *connect to database, query, CRUD operations*
-- Communication - *know exactly what your and your teammate's tasks are*
-- Cryptography - *Encryption vs Hashing, salting*
-- KISS - *Don't overcomplicate things*
-- Research - *The answer is often a few Google searches away*
-- Formatting - *manipulating strings in C#, markup language*
 ## Diagrams
 
 ![Method Flow](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/Methods%20Flow.png?raw=true)
@@ -51,3 +43,13 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 ![User Input Values](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/User%20Inputs.png?raw=true)
 
 ![DB Relation](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/DB%20Relation.png?raw=true)
+
+## Lessons Learned
+
+- Planning - *don't rush the planning phase*
+- Databases - *connect to database, query, CRUD operations*
+- Communication - *know exactly what your and your teammate's tasks are*
+- Cryptography - *Encryption vs Hashing, salting*
+- KISS - *Don't overcomplicate things*
+- Research - *The answer is often a few Google searches away*
+- Formatting - *manipulating strings in C#, markup language*
