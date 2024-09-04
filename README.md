@@ -11,8 +11,8 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 
 ## Authors
 
-- [@MuhammadNurD](https://github.com/MuhammadNurD)
-- [@JamesLizamore](https://github.com/JamesLizamore)
+- [@MuhammadNurD](https://github.com/MuhammadNurD) [*DB creation, Transactions(Insert), Balance(Update), Powerpoint*]
+- [@JamesLizamore](https://github.com/JamesLizamore) [*DB connection, Transactions(View), Balance(View), Documentation*]
 
 
 
@@ -24,7 +24,7 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 - Database interaction via ADO.NET
 
 
-## Technolgies
+## Technologies
 
 🛢️ SQL Server
 
@@ -33,6 +33,18 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 🔗 ADO.NET
 
 🌐 GitHub
+
+## Software Development Life Cycle
+
+*Our biggest mistake was not following the SDLC, leading to long development and testing phases due many unforeseen and unexpected issues, requirements and neccessary changes*
+
+### Project timeline ###
+- Planning *0.5 day*
+- Analysis *0.5 day*
+- Design *0 days*
+- Development *30 days*
+- Integration & Testing *14 days*
+- Implementation *14 days*
 
 ## Menu's
 
