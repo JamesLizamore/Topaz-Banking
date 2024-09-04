@@ -11,8 +11,8 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 
 ## Authors
 
-- [@MuhammadNurD](https://github.com/MuhammadNurD) [*DB creation, Transactions(Insert), Balance(Update), Powerpoint*]
-- [@JamesLizamore](https://github.com/JamesLizamore) [*DB connection, Transactions(View), Balance(View), Documentation*]
+- [@MuhammadNurD](https://github.com/MuhammadNurD) [*DB creation, Transactions(insert), Balance(update), Powerpoint*]
+- [@JamesLizamore](https://github.com/JamesLizamore) [*DB secure(hashing), Methods(flow), PIN(hidden), Documentation*]
 
 
 
