@@ -34,6 +34,12 @@ All transactions, accounts and users are stored in a database on a local SQL Ser
 
 🌐 GitHub
 
+## Menu's
+
+![Login](https://github.com/JamesLizamore/simpleBank/blob/master/Menu%20screenshots/User%20Login.png?raw=true)
+![Account select](https://github.com/JamesLizamore/simpleBank/blob/master/Menu%20screenshots/Account%20Selection.png?raw=true)
+![Account actions](https://github.com/JamesLizamore/simpleBank/blob/master/Menu%20screenshots/Account%20Functions%20Selection.png?raw=true)
+
 ## Diagrams
 
 ![Method Flow](https://github.com/JamesLizamore/simpleBank/blob/master/Diagram%20screenshots/Methods%20Flow.png?raw=true)
